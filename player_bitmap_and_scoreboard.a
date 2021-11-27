@@ -1,0 +1,145 @@
+	processor 6502
+;;include required files with definitions and macros
+	include "vcs.h"
+        include "macro.h"
+;;start our rom code segment
+	seg
+        org $f000
+        
+Reset:	
+	CLEAN_START	;Macro to clean memory and TIA
+        
+        ldx #$80	; blue background color
+        stx COLUBK
+        
+        lda #%1111	;white playing field color
+        sta COLUPF
+        
+;; set the TIA registers for the color of p1 and p2
+	lda #$48	;light red for p0
+        sta COLUP0
+        
+        lda #$C6
+        sta COLUP1
+        
+        ldy #%00000010		;CTRLPF D1 means score
+        sty CTRLPF
+        
+;start a new frame by configuring vblank and vsync	
+StartFrame:
+	lda #2
+        sta VBLANK  	;vblank on
+        sta VSYNC	;VSYNC on
+        
+        REPEAT 3		;3 blank lines
+        	sta WSYNC
+        REPEND
+        lda #0
+        sta VSYNC
+ 
+;tia 37 blank lines
+	REPEAT 37
+        	sta WSYNC
+        REPEND
+        lda 9
+        sta VBLANK
+        
+;Now the 192 visible scanlines
+	;draw 10 empty scanlines at the top of the frame
+        REPEAT 10	
+        	sta WSYNC
+        REPEND
+        
+;10 scanlines for the scoreboard number
+;pulls data from an array of bytes defined as number bitmap
+	ldy #0   	;loop iterator
+ScoreboardLoop:
+	lda NumberBitmap,Y
+        sta PF1
+        sta WSYNC
+        iny
+        cpy #10		;does Y = 10? if it does the 0 flag will be set and the loop will end with the next line
+        bne ScoreboardLoop
+        
+        lda #0
+        sta PF1
+        ;Draw  50 empty scanlines between scoreboard and player
+        REPEAT 50
+        	sta WSYNC
+        REPEND
+        
+; 10 scanlines for the player0 sprite	
+	ldy #0
+Player0Loop:  
+	lda PlayerBitmap,Y
+        sta GRP0
+        sta WSYNC
+        iny
+        cpy #10
+        bne Player0Loop
+        
+        lda #0
+        sta GRP0
+; 10 scanlines for the player1 sprite	
+	ldy #0
+Player1Loop:  
+	lda PlayerBitmap,Y
+        sta GRP1
+        sta WSYNC
+        iny
+        cpy #10
+        bne Player1Loop
+        
+        lda #0
+        sta GRP1
+        
+;draw remaining 102 scanlines
+	REPEAT 102
+        	sta WSYNC
+        REPEND
+;draw 30 overscan lines
+	REPEAT 30
+        	sta WSYNC
+        REPEND
+                      
+;loop to the next frame
+        jmp StartFrame
+        
+
+        
+;defines an array of bytes for the player
+	org $ffe8
+PlayerBitmap:
+	.byte #%01111110
+        .byte #%11111111
+        .byte #%10011001
+        .byte #%11111111
+        .byte #%11111111
+        .byte #%11111111
+        .byte #%10111101
+        .byte #%11000011
+        .byte #%11111111
+        .byte #%01111110 
+
+        
+;defines an array of bytes for the scoreboard number
+	org $fff2
+NumberBitmap:
+	.byte #%00001110
+        .byte #%00001110
+        .byte #%00000010
+        .byte #%00000010
+        .byte #%00001110
+        .byte #%00001110
+        .byte #%00001000
+        .byte #%00001000
+        .byte #%00001110
+        .byte #%00001110 
+        
+;Complete ROM size
+	org $FFFC
+        .word Reset
+        .word Reset
+	
+        
+ 
