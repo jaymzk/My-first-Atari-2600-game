@@ -1,0 +1,55 @@
+
+	processor 6502
+        include "vcs.h"
+        include "macro.h"
+       
+;;start rom code
+	seg
+        org $F000
+        
+Reset: 
+	CLEAN_START
+        
+        ldx #$80
+        stx COLUBK	;;blue background color
+        
+        lda #$1C
+        sta COLUPF	;yellow playing field color
+        
+; Start a new frame by configuring vblank and vsync
+
+StartFrame:	
+	lda #02
+        sta VBLANK	;turn vblank on
+        sta VSYNC	;turn vsync on
+        
+;Generate 3 lines of VSYNC
+
+	REPEAT 3	;creating a loop. This is a tool,
+        
+        sta VSYNC	;3 scanlines for vsync
+        
+        REPEND
+        lda 0
+        sta VSYNC	;turn off vsync
+        
+;Let the tia output 37 recommended lines of vblank
+	REPEAT 37
+        sta WSYNC
+        REPEND
+        lda 0
+        sta VBLANK	;turn off vblank
+
+
+;set the ctrlpf reg to allow playfield reflection
+	ldx #%00000001 ;ctrl reg. D0 means reflect so setting it to 1 means reflect
+        stx CTRLPF
+
+;draw 192 visible scanlines
+
+        
+        
+        
+        
+        
+	
